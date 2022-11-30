@@ -1,0 +1,47 @@
+description = "Spring Support for Testing GraphQL Applications"
+
+dependencies {
+	api project(':spring-graphql')
+	api 'com.graphql-java:graphql-java'
+	api 'io.projectreactor:reactor-core'
+	api 'org.springframework:spring-context'
+	api 'org.springframework:spring-test'
+	api 'com.jayway.jsonpath:json-path'
+
+	compileOnly 'jakarta.annotation:jakarta.annotation-api'
+	compileOnly 'org.springframework:spring-webflux'
+	compileOnly 'org.springframework:spring-webmvc'
+	compileOnly 'org.springframework:spring-websocket'
+	compileOnly 'org.springframework:spring-messaging'
+	compileOnly 'jakarta.servlet:jakarta.servlet-api'
+	compileOnly 'io.rsocket:rsocket-core'
+	compileOnly 'io.rsocket:rsocket-transport-netty'
+	compileOnly 'org.skyscreamer:jsonassert'
+	compileOnly 'com.google.code.findbugs:jsr305'
+	compileOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-core'
+
+	testImplementation(testFixtures(project(":spring-graphql")))
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.assertj:assertj-core'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.skyscreamer:jsonassert'
+	testImplementation 'org.springframework:spring-messaging'
+	testImplementation 'org.springframework:spring-webflux'
+	testImplementation 'org.springframework:spring-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'io.projectreactor.netty:reactor-netty'
+	testImplementation 'io.rsocket:rsocket-transport-local'
+	testImplementation 'io.micrometer:context-propagation'
+	testImplementation 'com.squareup.okhttp3:mockwebserver:3.14.9'
+	testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	testRuntimeOnly 'org.apache.logging.log4j:log4j-core'
+	testRuntimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+}

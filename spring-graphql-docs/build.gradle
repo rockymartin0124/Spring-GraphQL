@@ -1,0 +1,119 @@
+plugins {
+	id 'java'
+	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+}
+
+description = "Spring for GraphQL reference documentation"
+
+configurations {
+	asciidoctorExtensions
+}
+
+jar {
+	enabled = false
+}
+
+javadoc {
+	enabled = false
+}
+
+dependencies {
+	asciidoctorExtensions 'io.spring.asciidoctor.backends:spring-asciidoctor-backends:0.0.2'
+}
+
+repositories {
+	maven {
+		url "https://repo.spring.io/release"
+		mavenContent {
+			includeGroup "io.spring.asciidoctor.backends"
+		}
+	}
+}
+
+ext.javadocLinks = [
+		"https://docs.oracle.com/javase/8/docs/api/",
+		"https://javadoc.io/doc/com.graphql-java/graphql-java/${graphQlJavaVersion}/",
+		"https://docs.spring.io/spring-boot/docs/${bootVersion}/api/",
+		"https://docs.spring.io/spring-framework/docs/5.3.x/javadoc-api/"
+] as String[]
+
+/**
+ * Produce Javadoc for all Spring for GraphQL modules in "build/docs/javadoc"
+ */
+task api(type: Javadoc) {
+	group = "Documentation"
+	description = "Generates aggregated Javadoc API documentation."
+	title = "${rootProject.description} ${version} API"
+
+	dependsOn {
+		moduleProjects.collect {
+			it.tasks.getByName("jar")
+		}
+	}
+
+	options {
+		encoding = "UTF-8"
+		memberLevel = JavadocMemberLevel.PROTECTED
+		author = true
+		header = rootProject.description
+		use = true
+		splitIndex = true
+		links(project.ext.javadocLinks)
+		addStringOption('Xdoclint:none', '-quiet')
+	}
+	source = moduleProjects.collect { project ->
+		project.sourceSets.main.allJava
+	}
+	classpath = moduleProjects.collect { project ->
+		project.sourceSets.main.compileClasspath
+	}.sum()
+	maxMemory = "1024m"
+	destinationDir = file("$buildDir/docs/javadoc")
+}
+
+
+/**
+ * Generate the Spring for GraphQL Reference documentation from "src/docs/asciidoc"
+ * in "build/docs/reference/html".
+ */
+asciidoctor {
+	configurations 'asciidoctorExtensions'
+	baseDirFollowsSourceDir()
+	sources {
+		include '*.adoc'
+	}
+	logDocuments = true
+	outputOptions {
+		backends "spring-html"
+	}
+	outputDir "$buildDir/docs/reference/html"
+	attributes 'spring-graphql-version': project.version,
+			'spring-boot-version': bootVersion
+}
+
+/**
+ * Zip all docs into a single archive
+ */
+task docsZip(type: Zip, dependsOn: ['api', 'asciidoctor']) {
+	group = "Distribution"
+	description = "Builds -${archiveClassifier} archive containing api and reference " +
+			"for deployment at https://docs.spring.io/spring-graphql/docs."
+	from (api) {
+		into "api"
+	}
+	from ("$asciidoctor.outputDir") {
+		into "reference/html"
+	}
+}
+
+apply from: "${rootDir}/gradle/publishing.gradle"
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			artifact docsZip
+		}
+	}
+}
+
+

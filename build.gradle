@@ -1,0 +1,80 @@
+plugins {
+	id 'org.jetbrains.kotlin.jvm' version '1.7.0' apply false
+}
+
+ext {
+	moduleProjects = [project(":spring-graphql"), project(":spring-graphql-test")]
+	springFrameworkVersion = "6.0.0"
+	graphQlJavaVersion = "19.2"
+	bootVersion = "3.0.0-SNAPSHOT"
+}
+
+description = "Spring for GraphQL"
+
+subprojects {
+	group = 'org.springframework.graphql'
+
+	repositories {
+		mavenCentral()
+		if (version.contains('-')) {
+			maven { url "https://repo.spring.io/milestone" }
+		}
+		if (version.endsWith('-SNAPSHOT')) {
+			maven { url "https://repo.spring.io/snapshot" }
+		}
+	}
+}
+
+configure(moduleProjects) {
+	apply plugin: 'java-library'
+	apply plugin: 'java-test-fixtures'
+	apply plugin: 'org.springframework.graphql.compiler'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
+	}
+
+	pluginManager.withPlugin("kotlin") {
+		compileKotlin {
+			kotlinOptions {
+				jvmTarget = "17"
+				languageVersion = "1.7"
+				apiVersion = "1.7"
+				freeCompilerArgs = ["-Xjsr305=strict", "-Xsuppress-version-warnings", "-opt-in=kotlin.RequiresOptIn"]
+				allWarningsAsErrors = true
+			}
+		}
+		compileTestKotlin {
+			kotlinOptions {
+				jvmTarget = "17"
+				freeCompilerArgs = ["-Xjsr305=strict"]
+			}
+		}
+	}
+
+	configurations {
+		dependencyManagement {
+			canBeConsumed = false
+			canBeResolved = false
+			visible = false
+		}
+		matching { it.name.endsWith("Classpath") }.all { it.extendsFrom(dependencyManagement) }
+	}
+
+	dependencies {
+		dependencyManagement(enforcedPlatform(dependencies.project(path: ":platform")))
+	}
+
+	ext.javadocLinks = [
+			"https://docs.oracle.com/en/java/javase/17/docs/api/",
+			"https://docs.spring.io/spring-framework/docs/6.0.x/javadoc-api/",
+			"https://javadoc.io/doc/com.graphql-java/graphql-java/19.2/"
+	] as String[]
+
+	components.java.withVariantsFromConfiguration(configurations.testFixturesApiElements) { skip() }
+	components.java.withVariantsFromConfiguration(configurations.testFixturesRuntimeElements) { skip() }
+	
+	apply from: "${rootDir}/gradle/publishing.gradle"
+}
